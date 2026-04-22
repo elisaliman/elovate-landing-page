@@ -254,205 +254,210 @@
 
   // Each function returns a Promise that resolves when the choreography is done.
 
+  // Run a per-fly WAAPI animation in parallel and resolve when all finish.
+  // `framesFn(i)` returns the keyframe array for fly index `i`. `opts` is the
+  // WAAPI options — either a plain object (same for every fly) or a function
+  // `(i) => opts` so per-index staggers can vary `delay`. `fill: 'forwards'`
+  // is applied by default. Used by every choreography below to remove the
+  // Promise.all/map/animate boilerplate that was otherwise duplicated 12+ times.
+  function animateAll(flys, framesFn, opts) {
+    return Promise.all(flys.map((fly, i) => {
+      const o = typeof opts === 'function' ? opts(i) : opts;
+      return fly.animate(framesFn(i), { fill: 'forwards', ...o }).finished;
+    }));
+  }
+
   // A) CONGA LINE — exit one by one off one edge; entry one by one from the opposite.
   function exitConga(flys) {
     const dir = Math.random() < 0.5 ? -1 : 1;
     const dx  = dir * (innerWidth * 0.7 + 240);
-    return Promise.all(flys.map((fly, i) => {
+    return animateAll(flys, () => {
       const vy = (Math.random() - 0.5) * 60;
       const vr = (Math.random() - 0.5) * 30;
-      return fly.animate([
+      return [
         { transform: 'translate(0,0) rotate(0deg) scale(1)', opacity: 1 },
         { transform: `translate(${dx*0.45}px, ${vy*0.5}px) rotate(${dir*30 + vr}deg) scale(0.95)`, opacity: 1, offset: 0.55 },
         { transform: `translate(${dx}px, ${vy}px) rotate(${dir*90 + vr}deg) scale(0.7)`, opacity: 0 }
-      ], { duration: 600, delay: i * 130, easing: EASE_IN, fill: 'forwards' }).finished;
-    }));
+      ];
+    }, (i) => ({ duration: 600, delay: i * 130, easing: EASE_IN }));
   }
   function enterConga(flys) {
     const dir = Math.random() < 0.5 ? -1 : 1;
     const sx  = -dir * (innerWidth * 0.7 + 240);
-    return Promise.all(flys.map((fly, i) => {
+    return animateAll(flys, () => {
       const vy = (Math.random() - 0.5) * 60;
       const vr = (Math.random() - 0.5) * 30;
-      return fly.animate([
+      return [
         { transform: `translate(${sx}px, ${vy}px) rotate(${-dir*90 + vr}deg) scale(0.7)`, opacity: 0 },
         { opacity: 1, offset: 0.18 },
         { transform: `translate(${sx*0.4}px, ${vy*0.5}px) rotate(${-dir*30 + vr}deg) scale(0.95)`, opacity: 1, offset: 0.6 },
         { transform: 'translate(0,0) rotate(0deg) scale(1)', opacity: 1 }
-      ], { duration: 700, delay: i * 130, easing: EASE_OUT, fill: 'forwards' }).finished;
-    }));
+      ];
+    }, (i) => ({ duration: 700, delay: i * 130, easing: EASE_OUT }));
   }
 
   // B) SWIRL BREAK — gather into orbital ring, spin as a group, then break out.
   function exitSwirl(flys) {
     const N = flys.length;
     const radius = 130;
-    const gather = flys.map((fly, i) => {
+    return animateAll(flys, (i) => {
       const a0 = (i / N) * Math.PI * 2;
       const a1 = a0 + Math.PI * 1.1;
-      return fly.animate([
+      return [
         { transform: 'translate(0,0) rotate(0deg) scale(1)', opacity: 1 },
         { transform: `translate(${Math.cos(a0)*radius}px, ${Math.sin(a0)*radius}px) rotate(${a0*180/Math.PI}deg) scale(0.95)`, opacity: 1, offset: 0.45 },
         { transform: `translate(${Math.cos(a1)*radius}px, ${Math.sin(a1)*radius}px) rotate(${a1*180/Math.PI}deg) scale(0.95)`, opacity: 1 }
-      ], { duration: 600, easing: EASE_INOUT, fill: 'forwards' });
-    });
-    return Promise.all(gather.map(a => a.finished)).then(() => {
-      const breakOut = flys.map((fly, i) => {
-        const a1 = (i / N) * Math.PI * 2 + Math.PI * 1.1;
-        const fromX = Math.cos(a1) * radius, fromY = Math.sin(a1) * radius;
-        const dir = Math.random() * Math.PI * 2;
-        const dist = 700 + Math.random() * 300;
-        return fly.animate([
-          { transform: `translate(${fromX}px, ${fromY}px) rotate(${a1*180/Math.PI}deg) scale(0.95)`, opacity: 1 },
-          { transform: `translate(${Math.cos(dir)*dist}px, ${Math.sin(dir)*dist}px) rotate(${(Math.random()-0.5)*900}deg) scale(0.5)`, opacity: 0 }
-        ], { duration: 500, easing: EASE_IN, fill: 'forwards' });
-      });
-      return Promise.all(breakOut.map(a => a.finished));
-    });
+      ];
+    }, { duration: 600, easing: EASE_INOUT })
+    .then(() => animateAll(flys, (i) => {
+      const a1 = (i / N) * Math.PI * 2 + Math.PI * 1.1;
+      const fromX = Math.cos(a1) * radius, fromY = Math.sin(a1) * radius;
+      const dir = Math.random() * Math.PI * 2;
+      const dist = 700 + Math.random() * 300;
+      return [
+        { transform: `translate(${fromX}px, ${fromY}px) rotate(${a1*180/Math.PI}deg) scale(0.95)`, opacity: 1 },
+        { transform: `translate(${Math.cos(dir)*dist}px, ${Math.sin(dir)*dist}px) rotate(${(Math.random()-0.5)*900}deg) scale(0.5)`, opacity: 0 }
+      ];
+    }, { duration: 500, easing: EASE_IN }));
   }
   function enterSwirl(flys) {
     const N = flys.length;
     const radius = 130;
-    const inflow = flys.map((fly, i) => {
+    return animateAll(flys, (i) => {
       const a0 = (i / N) * Math.PI * 2;
       const dir = Math.random() * Math.PI * 2;
       const dist = 700 + Math.random() * 300;
-      return fly.animate([
+      return [
         { transform: `translate(${Math.cos(dir)*dist}px, ${Math.sin(dir)*dist}px) rotate(${(Math.random()-0.5)*900}deg) scale(0.5)`, opacity: 0 },
         { opacity: 1, offset: 0.25 },
         { transform: `translate(${Math.cos(a0)*radius}px, ${Math.sin(a0)*radius}px) rotate(${a0*180/Math.PI}deg) scale(0.95)`, opacity: 1 }
-      ], { duration: 600, easing: EASE_OUT, fill: 'forwards' });
-    });
-    return Promise.all(inflow.map(a => a.finished)).then(() => {
-      const spin = flys.map((fly, i) => {
-        const a0 = (i / N) * Math.PI * 2;
-        const a1 = a0 + Math.PI * 0.9;
-        return fly.animate([
-          { transform: `translate(${Math.cos(a0)*radius}px, ${Math.sin(a0)*radius}px) rotate(${a0*180/Math.PI}deg) scale(0.95)`, opacity: 1 },
-          { transform: `translate(${Math.cos(a1)*radius}px, ${Math.sin(a1)*radius}px) rotate(${a1*180/Math.PI}deg) scale(0.95)`, opacity: 1 }
-        ], { duration: 350, easing: EASE_INOUT, fill: 'forwards' });
-      });
-      return Promise.all(spin.map(a => a.finished));
-    }).then(() => {
-      const settle = flys.map((fly, i) => {
-        const a1 = (i / flys.length) * Math.PI * 2 + Math.PI * 0.9;
-        return fly.animate([
-          { transform: `translate(${Math.cos(a1)*radius}px, ${Math.sin(a1)*radius}px) rotate(${a1*180/Math.PI}deg) scale(0.95)`, opacity: 1 },
-          { transform: 'translate(0,0) rotate(0deg) scale(1)', opacity: 1 }
-        ], { duration: 400, easing: EASE_OUT, fill: 'forwards' });
-      });
-      return Promise.all(settle.map(a => a.finished));
-    });
+      ];
+    }, { duration: 600, easing: EASE_OUT })
+    .then(() => animateAll(flys, (i) => {
+      const a0 = (i / N) * Math.PI * 2;
+      const a1 = a0 + Math.PI * 0.9;
+      return [
+        { transform: `translate(${Math.cos(a0)*radius}px, ${Math.sin(a0)*radius}px) rotate(${a0*180/Math.PI}deg) scale(0.95)`, opacity: 1 },
+        { transform: `translate(${Math.cos(a1)*radius}px, ${Math.sin(a1)*radius}px) rotate(${a1*180/Math.PI}deg) scale(0.95)`, opacity: 1 }
+      ];
+    }, { duration: 350, easing: EASE_INOUT }))
+    .then(() => animateAll(flys, (i) => {
+      const a1 = (i / N) * Math.PI * 2 + Math.PI * 0.9;
+      return [
+        { transform: `translate(${Math.cos(a1)*radius}px, ${Math.sin(a1)*radius}px) rotate(${a1*180/Math.PI}deg) scale(0.95)`, opacity: 1 },
+        { transform: 'translate(0,0) rotate(0deg) scale(1)', opacity: 1 }
+      ];
+    }, { duration: 400, easing: EASE_OUT }));
   }
 
   // C) SHATTER — explode in random directions; entry converges from random offscreen.
   function exitShatter(flys) {
-    return Promise.all(flys.map(fly => {
+    return animateAll(flys, () => {
       const ang = Math.random() * Math.PI * 2;
       const dist = 800 + Math.random() * 400;
       const rot = (Math.random() - 0.5) * 1080;
-      return fly.animate([
+      return [
         { transform: 'translate(0,0) rotate(0deg) scale(1)', opacity: 1 },
         { transform: `translate(${Math.cos(ang)*dist}px, ${Math.sin(ang)*dist}px) rotate(${rot}deg) scale(0.5)`, opacity: 0 }
-      ], { duration: 700, easing: EASE_IN, fill: 'forwards' }).finished;
-    }));
+      ];
+    }, { duration: 700, easing: EASE_IN });
   }
   function enterShatter(flys) {
-    return Promise.all(flys.map(fly => {
+    return animateAll(flys, () => {
       const ang = Math.random() * Math.PI * 2;
       const dist = 750 + Math.random() * 400;
       const rot = (Math.random() - 0.5) * 1080;
-      return fly.animate([
+      return [
         { transform: `translate(${Math.cos(ang)*dist}px, ${Math.sin(ang)*dist}px) rotate(${rot}deg) scale(0.5)`, opacity: 0 },
         { opacity: 1, offset: 0.2 },
         { transform: 'translate(0,0) rotate(0deg) scale(1)', opacity: 1 }
-      ], { duration: 850, easing: EASE_OUT, fill: 'forwards' }).finished;
-    }));
+      ];
+    }, { duration: 850, easing: EASE_OUT });
   }
 
   // D) PAGE TURN — coordinated horizontal sweep, like flipping a magazine page.
   function exitPageTurn(flys) {
     const off = innerWidth * 0.7 + 200;
-    return Promise.all(flys.map((fly, i) => {
+    return animateAll(flys, () => {
       const vy = (Math.random() - 0.5) * 30;
-      return fly.animate([
+      return [
         { transform: 'translate(0,0) rotate(0deg)', opacity: 1 },
         { transform: `translate(${-off}px, ${vy}px) rotate(${-12 + (Math.random()-0.5)*8}deg)`, opacity: 0 }
-      ], { duration: 800, delay: i * 60, easing: EASE_IN, fill: 'forwards' }).finished;
-    }));
+      ];
+    }, (i) => ({ duration: 800, delay: i * 60, easing: EASE_IN }));
   }
   function enterPageTurn(flys) {
     const off = innerWidth * 0.7 + 200;
-    return Promise.all(flys.map((fly, i) => {
+    return animateAll(flys, () => {
       const vy = (Math.random() - 0.5) * 30;
-      return fly.animate([
+      return [
         { transform: `translate(${off}px, ${vy}px) rotate(${12 + (Math.random()-0.5)*8}deg)`, opacity: 0 },
         { opacity: 1, offset: 0.18 },
         { transform: 'translate(0,0) rotate(0deg)', opacity: 1 }
-      ], { duration: 900, delay: i * 60, easing: EASE_OUT, fill: 'forwards' }).finished;
-    }));
+      ];
+    }, (i) => ({ duration: 900, delay: i * 60, easing: EASE_OUT }));
   }
 
   // E) CURTAIN DROP — gravity fall down/in with a tiny bounce on settle.
   const GRAVITY_EASE = 'cubic-bezier(.55, 0, .9, .25)';
   function exitCurtain(flys) {
     const fallY = innerHeight * 0.7 + 200;
-    return Promise.all(flys.map((fly, i) => {
+    return animateAll(flys, () => {
       const driftX = (Math.random() - 0.5) * 80;
       const rot = (Math.random() - 0.5) * 30;
-      return fly.animate([
+      return [
         { transform: 'translate(0,0) rotate(0deg)', opacity: 1 },
         { transform: `translate(${driftX}px, ${fallY}px) rotate(${rot}deg)`, opacity: 0 }
-      ], { duration: 720, delay: i * 80, easing: GRAVITY_EASE, fill: 'forwards' }).finished;
-    }));
+      ];
+    }, (i) => ({ duration: 720, delay: i * 80, easing: GRAVITY_EASE }));
   }
   function enterCurtain(flys) {
     const startY = -(innerHeight * 0.7 + 200);
-    return Promise.all(flys.map((fly, i) => {
+    return animateAll(flys, () => {
       const driftX = (Math.random() - 0.5) * 60;
       const rot = (Math.random() - 0.5) * 24;
-      return fly.animate([
+      return [
         { transform: `translate(${driftX}px, ${startY}px) rotate(${rot}deg)`, opacity: 0 },
         { opacity: 1, offset: 0.12 },
         { transform: 'translate(0, 6px) rotate(0deg)', opacity: 1, offset: 0.78, easing: 'cubic-bezier(.4, 0, .3, 1)' },
         { transform: 'translate(0, -2px) rotate(0deg)', opacity: 1, offset: 0.9, easing: 'cubic-bezier(.4, 0, .6, 1)' },
         { transform: 'translate(0, 0) rotate(0deg)', opacity: 1 }
-      ], { duration: 880, delay: i * 80, easing: GRAVITY_EASE, fill: 'forwards' }).finished;
-    }));
+      ];
+    }, (i) => ({ duration: 880, delay: i * 80, easing: GRAVITY_EASE }));
   }
 
   // F) FLIPBOOK — staggered Y-axis flips, ~360ms each with 200ms overlap.
   function exitFlipbook(flys) {
-    return Promise.all(flys.map((fly, i) => fly.animate([
+    return animateAll(flys, () => [
       { transform: 'rotateY(0deg)',   opacity: 1 },
       { transform: 'rotateY(90deg)',  opacity: 1, offset: 0.5 },
       { transform: 'rotateY(180deg)', opacity: 0 }
-    ], { duration: 360, delay: i * 200, easing: EASE_IN, fill: 'forwards' }).finished));
+    ], (i) => ({ duration: 360, delay: i * 200, easing: EASE_IN }));
   }
   function enterFlipbook(flys) {
-    return Promise.all(flys.map((fly, i) => fly.animate([
+    return animateAll(flys, () => [
       { transform: 'rotateY(-180deg)', opacity: 0 },
       { transform: 'rotateY(-90deg)',  opacity: 1, offset: 0.5 },
       { transform: 'rotateY(0deg)',    opacity: 1 }
-    ], { duration: 400, delay: i * 200, easing: EASE_OUT, fill: 'forwards' }).finished));
+    ], (i) => ({ duration: 400, delay: i * 200, easing: EASE_OUT }));
   }
 
   // G) ELEVATOR — rigid group slide. No rotation, no separation.
   function exitElevator(flys) {
     const offY = -(innerHeight * 0.55 + 220);
-    return Promise.all(flys.map(fly => fly.animate([
+    return animateAll(flys, () => [
       { transform: 'translate(0, 0)',         opacity: 1 },
       { transform: `translate(0, ${offY}px)`, opacity: 1, offset: 0.85 },
       { transform: `translate(0, ${offY}px)`, opacity: 0 }
-    ], { duration: 680, easing: 'cubic-bezier(.5, 0, .3, 1)', fill: 'forwards' }).finished));
+    ], { duration: 680, easing: 'cubic-bezier(.5, 0, .3, 1)' });
   }
   function enterElevator(flys) {
     const startY = innerHeight * 0.55 + 220;
-    return Promise.all(flys.map(fly => fly.animate([
+    return animateAll(flys, () => [
       { transform: `translate(0, ${startY}px)`, opacity: 0 },
       { transform: `translate(0, ${startY}px)`, opacity: 1, offset: 0.12 },
       { transform: 'translate(0, 0)',           opacity: 1 }
-    ], { duration: 760, easing: 'cubic-bezier(.2, .7, .3, 1)', fill: 'forwards' }).finished));
+    ], { duration: 760, easing: 'cubic-bezier(.2, .7, .3, 1)' });
   }
 
   // H) STATIC / GLITCH — discrete jitter then hard cut. Per-keyframe steps(1, end)
@@ -470,10 +475,10 @@
     return frames;
   }
   function exitGlitch(flys) {
-    return Promise.all(flys.map(fly => fly.animate(glitchFrames(9, false), { duration: 240, fill: 'forwards' }).finished));
+    return animateAll(flys, () => glitchFrames(9, false), { duration: 240 });
   }
   function enterGlitch(flys) {
-    return Promise.all(flys.map(fly => fly.animate(glitchFrames(9, true),  { duration: 280, fill: 'forwards' }).finished));
+    return animateAll(flys, () => glitchFrames(9, true),  { duration: 280 });
   }
 
   // Choreography registry. Add a pair here and it's automatically in rotation.
