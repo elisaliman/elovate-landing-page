@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <title>Qlozet — your Qlozet, only better</title>
+  <link rel="stylesheet" href="landing.css">
+</head>
+<body>
+
+<!-- background layers (sky → banding → dither → clouds → flare → grain → sparkles) -->
+<div class="sky"></div>
+<div class="banding"></div>
+<div class="dither"></div>
+<div class="clouds">
+  <div class="cloud c1"></div>
+  <div class="cloud c2"></div>
+  <div class="cloud c3"></div>
+  <div class="cloud c4"></div>
+</div>
+<div class="flare"></div>
+<div class="grain"></div>
+<div class="sparkles" id="sparkles"></div>
+
+<!-- intro stage -->
+<div class="stage" id="stage">
+  <!-- swooping ribbon: stepped gradient + dot dither for low-bit-depth feel -->
+  <div class="ribbon-wrap" id="ribbonWrap">
+    <svg width="100%" height="100%" viewBox="0 0 1600 900" preserveAspectRatio="none" shape-rendering="crispEdges">
+      <defs>
+        <linearGradient id="ribbonGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0"    stop-color="#ffffff" stop-opacity="0"></stop>
+          <stop offset="0.16" stop-color="#ffffff" stop-opacity="0"></stop>
+          <stop offset="0.16" stop-color="#ffffff" stop-opacity="0.95"></stop>
+          <stop offset="0.40" stop-color="#ffffff" stop-opacity="0.95"></stop>
+          <stop offset="0.40" stop-color="#E8F2FB" stop-opacity="0.92"></stop>
+          <stop offset="0.62" stop-color="#E8F2FB" stop-opacity="0.92"></stop>
+          <stop offset="0.62" stop-color="#FFE7C2" stop-opacity="0.85"></stop>
+          <stop offset="0.82" stop-color="#FFE7C2" stop-opacity="0.85"></stop>
+          <stop offset="0.82" stop-color="#FFD7E0" stop-opacity="0.75"></stop>
+          <stop offset="1"    stop-color="#FFD7E0" stop-opacity="0.6"></stop>
+        </linearGradient>
+        <pattern id="ribbonDots" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+          <rect width="8" height="8" fill="rgba(255,255,255,0)"></rect>
+          <rect x="0" y="0" width="2" height="2" fill="rgba(70,120,170,0.55)"></rect>
+          <rect x="4" y="4" width="2" height="2" fill="rgba(70,120,170,0.55)"></rect>
+          <rect x="6" y="2" width="1" height="1" fill="rgba(255,255,255,0.6)"></rect>
+          <rect x="2" y="6" width="1" height="1" fill="rgba(255,255,255,0.6)"></rect>
+        </pattern>
+      </defs>
+      <path class="ribbon-path"   d="M -80 220 C 240 40, 520 720, 820 340 S 1380 120, 1700 520"></path>
+      <path class="ribbon-dither" d="M -80 220 C 240 40, 520 720, 820 340 S 1380 120, 1700 520"></path>
+    </svg>
+  </div>
+
+  <!-- flying intro items — sized inline so JS can read offsetWidth/Height for
+       the path-anchor math; sources match outfits/outfit_1 exactly so the
+       intro and the initial flat-lay are visually identical -->
+  <div class="item" id="item-shirt"  style="width:120px; height:120px; margin-left:-60px; margin-top:-60px;">
+    <img src="outfits/outfit_1/shirt.png" alt="">
+  </div>
+  <div class="item" id="item-jeans"  style="width:105px; height:150px; margin-left:-52px; margin-top:-75px;">
+    <img src="outfits/outfit_1/pants.png" alt="">
+  </div>
+  <div class="item" id="item-hat"    style="width:110px; height:72px;  margin-left:-55px; margin-top:-36px;">
+    <img src="outfits/outfit_1/belt.png"  alt="">
+  </div>
+  <div class="item shoes" id="item-sneakers" style="width:156px; height:78px; margin-left:-78px; margin-top:-39px;">
+    <img class="shoe-l" src="outfits/outfit_1/shoes.png" alt="">
+    <img class="shoe-r" src="outfits/outfit_1/shoes.png" alt="">
+  </div>
+
+  <!-- flat-lay outfit. data-slot maps to keys in OUTFITS (shirt/pants/belt/shoes).
+       DOM order = paint order, declared bottom→top: pants → shirt → shoes → hat. -->
+  <div class="outfit" id="outfit">
+    <div class="piece jeans">
+      <div class="fly"><div class="bob"><div class="grow">
+        <img class="photo" data-slot="pants" src="outfits/outfit_1/pants.png" alt="">
+      </div></div></div>
+    </div>
+    <div class="piece shirt">
+      <div class="fly"><div class="bob"><div class="grow">
+        <img class="photo" data-slot="shirt" src="outfits/outfit_1/shirt.png" alt="">
+      </div></div></div>
+    </div>
+    <!-- shoes piece holds the photo TWICE (one per foot); JS jitters rotations -->
+    <div class="piece sneakers">
+      <div class="fly"><div class="bob"><div class="grow">
+        <img class="photo shoe-l" data-slot="shoes" src="outfits/outfit_1/shoes.png" alt="">
+        <img class="photo shoe-r" data-slot="shoes" src="outfits/outfit_1/shoes.png" alt="">
+      </div></div></div>
+    </div>
+    <div class="piece hat">
+      <div class="fly"><div class="bob"><div class="grow">
+        <img class="photo" data-slot="belt" src="outfits/outfit_1/belt.png" alt="">
+      </div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 8x8 tile grid that flips to reveal the landing page -->
+<div class="tile-grid" id="tileGrid"></div>
+
+<!-- final landing page (revealed after the tile flip) -->
+<div class="page" id="page">
+  <!-- Theme toggle: a single glyph that vertical-twists (squeeze in tall,
+       swap, squeeze back out) when clicked. Driven entirely by JS in
+       landing.js, no faux 3D, no flip seams. -->
+  <button id="themeToggle" class="top-left theme-toggle" type="button" aria-label="toggle dark mode" aria-pressed="false">
+    <span class="theme-glyph" aria-hidden="true">☼</span>
+    Qlozet
+  </button>
+  <a href="#" class="top-right" id="login">log in</a>
+
+  <div class="headline">
+    your Qlozet,<span class="two"><em class="it">only better</em>.</span>
+  </div>
+
+  <div class="subtitle">a digital wardrobe for your dorm. share fits. swap pieces. get dressed.</div>
+
+  <!-- Formspree handles delivery. method/action also act as a graceful no-JS
+       fallback; landing.js intercepts submit and POSTs via fetch with an
+       Accept: application/json header so Formspree returns JSON instead of
+       redirecting, keeping the user on this page. -->
+  <form class="capture" id="capture" action="https://formspree.io/f/xeevpobb" method="POST" novalidate>
+    <input id="email" name="email" type="email" placeholder="you@school.edu" autocomplete="email" required>
+    <button type="submit" class="join micro-host" id="join">
+      <span class="join-label">join the waitlist</span>
+      <span class="micro" aria-hidden="true"></span>
+    </button>
+  </form>
+
+  <div class="bottom-left">
+    <span class="label">now at:</span>
+    <div class="marquee">
+      <!-- track is populated and duplicated by JS for a seamless loop -->
+      <div class="marquee-track" id="marquee"></div>
+    </div>
+  </div>
+  <div class="bottom-right">
+    <span class="blink"></span>
+    <span id="ts"></span>
+    <span>v0.1 · spring ’26</span>
+  </div>
+</div>
+
+<script src="landing.js"></script>
+</body>
+</html>
