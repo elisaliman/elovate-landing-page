@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.uv-cache/
+
+# Node (just in case)
+node_modules/
+
+# Editor / OS noise
+.idea/
+*.swp
