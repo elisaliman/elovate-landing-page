@@ -1,0 +1,19 @@
+[project]
+name = "normalize-outfits"
+version = "0.1.0"
+description = "Inspect and normalize clothing PNG/JPG assets for the Qlozet landing page."
+requires-python = ">=3.10"
+dependencies = [
+  "Pillow>=10.0",
+  "numpy>=1.26",
+]
+
+[project.scripts]
+normalize-outfits = "normalize_outfits.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["normalize_outfits"]
