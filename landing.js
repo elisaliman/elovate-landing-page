@@ -145,6 +145,12 @@
       items.forEach(item => { item.el.style.opacity = '0'; });
       outfit.classList.add('show');
       page.classList.add('show');
+      // Reveal the sticky header at the same moment as the landing chrome.
+      const header = document.getElementById('siteHeader');
+      if (header) header.classList.add('show');
+      // Intro is fully revealed; unlock scroll so the user can move into the
+      // onboarding/pricing/faq sections. Snap behavior is defined in CSS.
+      document.documentElement.classList.add('scrollable');
     }, 3300);
 
     // First cycle 10s after the reveal completes (~4250ms), then every 10s.
@@ -519,33 +525,99 @@
   // .bob keeps composing its idle wobble inside, .grow hover scale keeps
   // working on top. We deliberately gate clicks on `cycling` so the simpler
   // option holds: a click during a transition is just ignored (not queued).
-  // Per-fly `spinning` re-entrancy guard prevents stacking spins from rapid
-  // double-clicks; subsequent clicks return early until the animation ends.
+  // Per-element `spinning` re-entrancy guard prevents stacking spins from
+  // rapid double-clicks; subsequent clicks are no-ops until the animation
+  // ends. Same helper is reused below for FAQ flat-lay images.
   const SPIN_DURATION = 600;
   const SPIN_EASING   = 'cubic-bezier(0.45, 0, 0.55, 1)';
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const spinning = new WeakSet();
-  outfit.addEventListener('click', (e) => {
-    if (cycling) return;
+  // composite: 'add' so the spin composes with any pre-existing transform
+  // (the FAQ flat-lay imgs already carry inline rotate(-4deg) etc.) rather
+  // than snapping them to 0° at the start of the animation.
+  function spinElement(el) {
     if (reducedMotion.matches) return;
-    const piece = e.target.closest('.piece');
-    if (!piece || !outfit.contains(piece)) return;
-    const fly = piece.querySelector('.fly');
-    if (!fly || spinning.has(fly)) return;
-    spinning.add(fly);
-    const anim = fly.animate(
+    if (spinning.has(el)) return;
+    spinning.add(el);
+    const anim = el.animate(
       [
         { transform: 'rotate(0deg)' },
         { transform: 'rotate(360deg)' },
       ],
-      { duration: SPIN_DURATION, easing: SPIN_EASING }
+      { duration: SPIN_DURATION, easing: SPIN_EASING, composite: 'add' }
     );
     const release = () => {
       anim.cancel();
-      spinning.delete(fly);
+      spinning.delete(el);
     };
     anim.onfinish = release;
     anim.oncancel = release;
+  }
+  outfit.addEventListener('click', (e) => {
+    if (cycling) return;
+    const piece = e.target.closest('.piece');
+    if (!piece || !outfit.contains(piece)) return;
+    const fly = piece.querySelector('.fly');
+    if (!fly) return;
+    spinElement(fly);
+  });
+
+  // FAQ flat-lay images get the same 360° click-spin. They have inline
+  // rotations from CSS that we want to preserve, so spinElement uses
+  // composite: 'add' to layer the rotation on top instead of resetting.
+  document.querySelectorAll('.faq-flatlay .fl').forEach((img) => {
+    img.style.cursor = 'pointer';
+    img.addEventListener('click', () => spinElement(img));
+  });
+
+  // ----- FAQ accordion (WAAPI) -----
+  // The native <details> toggle plus the CSS grid-template-rows trick worked
+  // on first open then snapped on subsequent opens (UA content-visibility
+  // optimizations interfere with the cached track interpolation). Driving
+  // height directly from JS sidesteps that and lets us control easing/
+  // duration ourselves. Pattern: intercept the summary click, prevent the
+  // default toggle, animate height, then commit/remove [open] at the end.
+  const FAQ_DURATION = 280;
+  const FAQ_EASING   = 'cubic-bezier(0.4, 0, 0.2, 1)';
+  document.querySelectorAll('.faq-item').forEach((item) => {
+    const summary = item.querySelector('summary');
+    const body    = item.querySelector('.faq-body');
+    if (!summary || !body) return;
+    let running = null;
+    summary.addEventListener('click', (e) => {
+      e.preventDefault();
+      // Cancel any in-flight animation and read current height as the start
+      // so a mid-flight toggle reverses smoothly from where it is.
+      if (running) running.cancel();
+      const startHeight = body.getBoundingClientRect().height;
+      const isOpen = item.hasAttribute('open');
+      if (isOpen) {
+        running = body.animate(
+          [{ height: startHeight + 'px' }, { height: '0px' }],
+          { duration: FAQ_DURATION, easing: FAQ_EASING }
+        );
+        running.onfinish = () => {
+          item.removeAttribute('open');
+          body.style.height = '';
+          running = null;
+        };
+      } else {
+        // Pin inline height before flipping [open] so the body doesn't flash
+        // open at full size for a frame between the attribute change and the
+        // animation's first composited keyframe.
+        body.style.height = startHeight + 'px';
+        item.setAttribute('open', '');
+        const target = body.scrollHeight;
+        running = body.animate(
+          [{ height: startHeight + 'px' }, { height: target + 'px' }],
+          { duration: FAQ_DURATION, easing: FAQ_EASING }
+        );
+        running.onfinish = () => {
+          body.style.height = '';
+          running = null;
+        };
+      }
+    });
   });
 
   setTimeout(startSequence, 120);
@@ -716,5 +788,39 @@
         handleCaptureError('network hiccup. try again?', originalLabel);
       }
     });
+  }
+
+  // Plan + final CTA buttons all funnel into the existing waitlist. We scroll
+  // to the very top of the document (so the user lands on section 1 from its
+  // top edge, not centered on the form mid-section), then focus the email
+  // input once the smooth-scroll settles. Kept dependency-free (no second
+  // Formspree form, no per-plan state to maintain).
+  const scrollToTopAndFocus = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // 700ms covers a typical smooth scroll across the full document. preventScroll
+    // stops focus from yanking the viewport off the snap point we just landed on.
+    setTimeout(() => {
+      const input = document.getElementById('email');
+      if (input && typeof input.focus === 'function') input.focus({ preventScroll: true });
+    }, 700);
+  };
+  document.querySelectorAll('.plan-cta, .faq-cta').forEach((btn) => {
+    btn.addEventListener('click', scrollToTopAndFocus);
+  });
+
+  // Site header gains a translucent glass bar once the user scrolls past the
+  // top of section 1, so it stays legible against the busier sections below.
+  // We use a small threshold (40px) so it doesn't flicker on micro-scrolls.
+  const siteHeader = document.getElementById('siteHeader');
+  if (siteHeader) {
+    let raf = 0;
+    const updateHeader = () => {
+      raf = 0;
+      siteHeader.classList.toggle('scrolled', window.scrollY > 40);
+    };
+    window.addEventListener('scroll', () => {
+      if (raf) return;
+      raf = requestAnimationFrame(updateHeader);
+    }, { passive: true });
   }
 })();

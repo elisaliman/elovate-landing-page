@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
   <title>Qlozet — your Qlozet, only better</title>
   <link rel="stylesheet" href="landing.css">
 </head>
@@ -70,6 +70,29 @@
     <img class="shoe-r" src="outfits/outfit_1/shoes.png" alt="">
   </div>
 
+  <!-- The flat-lay outfit lives inside .page (below) so it scrolls away with
+       section 1 instead of staying pinned over the rest of the document. -->
+  </div>
+
+<!-- 8x8 tile grid that flips to reveal the landing page -->
+<div class="tile-grid" id="tileGrid"></div>
+
+<!-- Sticky site header — visible across every section. Lives outside .page so
+     it stays fixed regardless of scroll. Revealed at the same moment as the
+     landing page in landing.js. -->
+<header class="site-header" id="siteHeader">
+  <!-- Theme toggle: a single glyph that vertical-twists (squeeze in tall,
+       swap, squeeze back out) when clicked. Driven entirely by landing.js. -->
+  <button id="themeToggle" class="theme-toggle" type="button" aria-label="toggle dark mode" aria-pressed="false">
+    <span class="theme-glyph" aria-hidden="true">☼</span>
+    Qlozet
+  </button>
+  <a href="#" class="header-link" id="login">log in</a>
+</header>
+
+<!-- final landing page (revealed after the tile flip). Now in normal flow as
+     the first scroll-snap section; subsequent sections follow below. -->
+<section class="page snap-section" id="page">
   <!-- flat-lay outfit. data-slot maps to keys in OUTFITS (shirt/pants/belt/shoes).
        DOM order = paint order, declared bottom→top: pants → shirt → shoes → hat. -->
   <div class="outfit" id="outfit">
@@ -96,21 +119,6 @@
       </div></div></div>
     </div>
   </div>
-</div>
-
-<!-- 8x8 tile grid that flips to reveal the landing page -->
-<div class="tile-grid" id="tileGrid"></div>
-
-<!-- final landing page (revealed after the tile flip) -->
-<div class="page" id="page">
-  <!-- Theme toggle: a single glyph that vertical-twists (squeeze in tall,
-       swap, squeeze back out) when clicked. Driven entirely by JS in
-       landing.js, no faux 3D, no flip seams. -->
-  <button id="themeToggle" class="top-left theme-toggle" type="button" aria-label="toggle dark mode" aria-pressed="false">
-    <span class="theme-glyph" aria-hidden="true">☼</span>
-    Qlozet
-  </button>
-  <a href="#" class="top-right" id="login">log in</a>
 
   <div class="headline">
     your Qlozet,<span class="two"><em class="it">only better</em>.</span>
@@ -142,7 +150,142 @@
     <span id="ts"></span>
     <span>v0.1 · spring ’26</span>
   </div>
+</section>
+
+<!-- ===== Section 2 — Onboarding ===== -->
+<section class="snap-section section" id="onboarding" aria-labelledby="onboarding-title">
+  <div class="section-inner">
+    <h2 class="section-headline" id="onboarding-title">
+      your new closet.<span class="two"><em class="it">3 simple steps</em>.</span>
+    </h2>
+    <ol class="step-grid" role="list">
+      <li class="step-card">
+        <div class="step-art">
+          <img src="outfits/outfit_1/shirt.png" alt="">
+        </div>
+        <div class="step-text">
+          <div class="step-num">01</div>
+          <h3 class="step-title">upload your closet</h3>
+          <p class="step-copy">add your pieces in seconds. we’ll do the rest.</p>
+        </div>
+      </li>
+      <li class="step-card">
+        <div class="step-art">
+          <img src="outfits/outfit_2/shirt.png" alt="">
+        </div>
+        <div class="step-text">
+          <div class="step-num">02</div>
+          <h3 class="step-title">build outfits</h3>
+          <p class="step-copy">mix, match, and plan your looks.</p>
+        </div>
+      </li>
+      <li class="step-card">
+        <div class="step-art">
+          <img src="outfits/outfit_3/shirt.png" alt="">
+        </div>
+        <div class="step-text">
+          <div class="step-num">03</div>
+          <h3 class="step-title">share or swap</h3>
+          <p class="step-copy">connect with friends and swap what you don’t wear.</p>
+        </div>
+      </li>
+    </ol>
 </div>
+</section>
+
+<!-- ===== Section 3 — Pricing ===== -->
+<section class="snap-section section" id="pricing" aria-labelledby="pricing-title">
+  <div class="section-inner">
+    <h2 class="section-headline" id="pricing-title">
+      plans for every<span class="two"><em class="it">kind</em> of closet.</span>
+    </h2>
+    <p class="section-subtitle">start free. upgrade anytime.</p>
+    <div class="plan-grid">
+      <article class="plan-card">
+        <h3 class="plan-name">free</h3>
+        <div class="plan-price"><span class="amount">$0</span><span class="cadence">/forever</span></div>
+        <ul class="plan-feats" role="list">
+          <li>digital closet</li>
+          <li>basic outfit planning</li>
+          <li>community access</li>
+        </ul>
+        <button type="button" class="plan-cta plan-cta--ghost" data-plan="free">join free</button>
+      </article>
+      <article class="plan-card">
+        <h3 class="plan-name">plus</h3>
+        <div class="plan-price"><span class="amount">$4.99</span><span class="cadence">/month</span></div>
+        <ul class="plan-feats" role="list">
+          <li>advanced outfit planning</li>
+          <li>unlimited swaps</li>
+          <li>closet insights</li>
+          <li>priority support</li>
+        </ul>
+        <button type="button" class="plan-cta" data-plan="plus">join plus</button>
+      </article>
+      <article class="plan-card plan-card--featured">
+        <span class="plan-pill">best value</span>
+        <h3 class="plan-name">campus</h3>
+        <div class="plan-price"><span class="amount">$2.49</span><span class="cadence">/month</span></div>
+        <ul class="plan-feats" role="list">
+          <li>all plus features</li>
+          <li>campus-only swaps</li>
+          <li>verified community</li>
+        </ul>
+        <button type="button" class="plan-cta" data-plan="campus">join campus</button>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Section 4 — FAQ + final CTA ===== -->
+<section class="snap-section section" id="faq" aria-labelledby="faq-title">
+  <div class="section-inner faq-inner">
+    <div class="faq-col">
+      <h2 class="section-headline" id="faq-title">
+        questions?<span class="two"><em class="it">we got you</em>.</span>
+      </h2>
+      <!-- Each <details> body is wrapped in .faq-body / .faq-body-inner so the
+           CSS grid-template-rows trick can smoothly animate height between
+           collapsed (0fr) and expanded (1fr). The UA stylesheet's display:none
+           on closed details is overridden in CSS so the body stays in flow. -->
+      <div class="faq-list">
+        <details class="faq-item">
+          <summary>is Qlozet free to use?</summary>
+          <div class="faq-body"><div class="faq-body-inner"><p>yes — the free plan covers your digital closet, basic planning, and community access forever.</p></div></div>
+        </details>
+        <details class="faq-item">
+          <summary>how do swaps work?</summary>
+          <div class="faq-body"><div class="faq-body-inner"><p>list pieces you’re open to swapping, browse what your campus has, and arrange a meet-up in-app.</p></div></div>
+        </details>
+        <details class="faq-item">
+          <summary>is it safe and private?</summary>
+          <div class="faq-body"><div class="faq-body-inner"><p>your closet is private by default. you choose what’s public, what’s for friends, and what’s swappable.</p></div></div>
+        </details>
+        <details class="faq-item">
+          <summary>what campuses are included?</summary>
+          <div class="faq-body"><div class="faq-body-inner"><p>we’re launching at usc, ucla, stanford, brown, risd, and yale this spring. more rolling out monthly.</p></div></div>
+        </details>
+        <details class="faq-item">
+          <summary>can i cancel anytime?</summary>
+          <div class="faq-body"><div class="faq-body-inner"><p>yes. cancel from settings — your closet stays, only the paid features stop.</p></div></div>
+        </details>
+      </div>
+    </div>
+    <aside class="faq-aside">
+      <div class="faq-flatlay">
+        <img class="fl fl-shirt" src="outfits/outfit_2/shirt.png" alt="">
+        <img class="fl fl-pants" src="outfits/outfit_2/pants.png" alt="">
+        <img class="fl fl-shoes" src="outfits/outfit_2/shoes.png" alt="">
+        <img class="fl fl-belt"  src="outfits/outfit_2/belt.png"  alt="">
+      </div>
+      <div class="cta-card">
+        <h3 class="cta-title">ready to upgrade<br><em class="it">your closet?</em></h3>
+        <p class="cta-sub">join thousands of students on the waitlist.</p>
+        <button type="button" class="cta-btn faq-cta">join the waitlist</button>
+      </div>
+    </aside>
+  </div>
+</section>
 
 <script src="landing.js"></script>
 </body>

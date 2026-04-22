@@ -17,6 +17,18 @@
   --cloud-core: rgba(255,255,255,0.95);
   --cloud-edge: rgba(255,255,255,0.5);
   --cloud-op:   0.85;
+  /* ----- glass surface tokens -----
+     Translucent fill (you can clearly see the sky/clouds through it), a small
+     amount of backdrop blur for refraction (not for fog), thin light border,
+     soft shadow, faint inner-top highlight. The blur is kept low on purpose
+     so the surface reads as glass, not frosted plastic. */
+  --glass-bg:        rgba(255, 255, 255, 0.16);
+  --glass-bg-strong: rgba(255, 255, 255, 0.26);  /* for the featured/CTA cards */
+  --glass-bg-ink:    rgba(10, 18, 48, 0.40);     /* dark variant for inverted cards */
+  --glass-border:    rgba(255, 255, 255, 0.55);
+  --glass-shadow:    0 8px 28px rgba(20, 50, 110, 0.07);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  --glass-blur:      blur(3px) saturate(140%);
 }
 body.dark {
   --sky-1: #060d24;
@@ -33,12 +45,34 @@ body.dark {
   --cloud-core: rgba(70, 95, 160, 0.32);
   --cloud-edge: rgba(70, 95, 160, 0.14);
   --cloud-op:   0.7;
+  /* Glass tokens flip to a moonlit interpretation: cool blue-gray fill, very
+     subtle highlight, deeper shadow for contrast against the night sky. */
+  --glass-bg:        rgba(40, 60, 120, 0.14);
+  --glass-bg-strong: rgba(60, 85, 150, 0.20);
+  --glass-bg-ink:    rgba(220, 230, 255, 0.42);
+  --glass-border:    rgba(180, 200, 240, 0.20);
+  --glass-shadow:    0 8px 28px rgba(0, 0, 0, 0.28);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.10);
 }
 /* Theme transitions live on the elements themselves, so toggling body.dark
    smoothly interpolates each themed property over ~700ms. */
 :root, body { transition: background-color 700ms ease, color 700ms ease; }
 
-html, body { width: 100%; height: 100%; overflow: hidden; background: var(--sky-1); }
+html, body { width: 100%; background: var(--sky-1); }
+/* The viewport scroller is <html>, not <body>. Putting scroll-snap on body is
+   a known trap — body becomes an internal scroll container and window.scrollY
+   stays at 0 forever, which silently breaks header-on-scroll, scrollTo({top:0}),
+   and (in some browsers) the snap interpolation itself. Keeping the document
+   element as the scroller fixes all three at once. */
+html { height: 100%; overflow: hidden; }
+html.scrollable {
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* Mandatory snap so the page always settles on a section after the user
+     stops scrolling — they never rest "between" two panels. */
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+}
 body {
   font-family: Arial, sans-serif;
   color: var(--ink);
@@ -46,6 +80,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
   position: relative;
   letter-spacing: -0.01em;
+  min-height: 100%;
+}
+.snap-section {
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+  min-height: 100vh;
+  position: relative;
 }
 button, input { font-family: Arial, sans-serif; }
 
@@ -158,8 +199,10 @@ button, input { font-family: Arial, sans-serif; }
   100% { opacity: 0; transform: translate(calc(var(--dx,6px)*2), calc(var(--dy,-8px)*2)) scale(0.6); }
 }
 
-/* ===== intro stage ===== */
-.stage { position: fixed; inset: 0; z-index: 10; }
+/* ===== intro stage =====
+   pointer-events: none so it never blocks scroll/clicks on sections below
+   (the ribbon and flying items are non-interactive anyway). */
+.stage { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
 
 /* the swooping ribbon — stepped gradient + dot dither give a low-bit-depth feel */
 .ribbon-wrap {
@@ -338,9 +381,13 @@ button, input { font-family: Arial, sans-serif; }
   background-color: #E8F2FB;
 }
 
-/* ===== final landing page ===== */
+/* ===== final landing page =====
+   Now in normal flow as the first scroll-snap section. Children remain
+   absolutely positioned within it (top-left logo, headline, capture, etc.). */
 .page {
-  position: fixed; inset: 0;
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
   z-index: 15;
   opacity: 0;
   pointer-events: none;
@@ -348,16 +395,59 @@ button, input { font-family: Arial, sans-serif; }
 .page.show { opacity: 1; }
 .page.show > * { pointer-events: auto; }
 
-.top-left {
-  position: absolute; top: 28px; left: 34px;
+/* ===== sticky site header =====
+   Lives outside .page so it stays pinned to the viewport across every section.
+   Faded in at the same intro reveal moment as the rest of the landing chrome
+   (landing.js adds .show). Glass-tinted background appears once the user
+   actually scrolls (.scrolled), so it stays invisible at rest on section 1. */
+.site-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 16;                      /* above .page (z:15) and intro layers */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px clamp(20px, 3vw, 36px);
   font-weight: 700;
   font-size: 15px;
-  letter-spacing: -0.04em;
   color: var(--ink);
-  transition: color 700ms ease;
+  opacity: 0;
+  pointer-events: none;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition:
+    opacity 700ms ease,
+    background-color 260ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 260ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 700ms ease;
+}
+.site-header.show { opacity: 1; }
+.site-header.show > * { pointer-events: auto; }
+/* Once the user scrolls past section 1 the header gains a translucent glass
+   bar so the chrome stays legible against busier sections behind it. */
+.site-header.scrolled {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-bottom-color: var(--glass-border);
 }
 
-/* ===== theme toggle (top-left) =====
+.header-link {
+  font-size: 12px;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  color: var(--ink);
+  transition: text-decoration-thickness 140ms cubic-bezier(0.4, 0.0, 1, 1),
+              color 700ms ease;
+}
+.header-link:hover {
+  text-decoration-thickness: 2px;
+  transition: text-decoration-thickness 180ms cubic-bezier(0.4, 0.0, 0.2, 1),
+              color 700ms ease;
+}
+
+/* ===== theme toggle (in site header) =====
    The icon does a vertical twist on click (driven by WAAPI in landing.js):
    it squeezes horizontally to a thin sliver and grows slightly taller, the
    glyph swaps to the moon, then it expands back out. No 3D, no faux flip. */
@@ -385,22 +475,6 @@ button, input { font-family: Arial, sans-serif; }
   transition: color 700ms ease;
   /* Avoid sub-pixel anti-alias shimmer when scaleX gets very small. */
   will-change: transform;
-}
-
-.top-right {
-  position: absolute !important; top: 30px; right: 34px;
-  font-size: 12px;
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
-  color: var(--ink);
-  transition: text-decoration-thickness 140ms cubic-bezier(0.4, 0.0, 1, 1),
-              color 700ms ease;
-}
-.top-right:hover {
-  text-decoration-thickness: 2px;
-  transition: text-decoration-thickness 180ms cubic-bezier(0.4, 0.0, 0.2, 1),
-              color 700ms ease;
 }
 
 .headline {
@@ -560,6 +634,393 @@ button, input { font-family: Arial, sans-serif; }
   transition: transform 180ms cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
+/* =====================================================================
+   ===== sections 2/3/4 (onboarding · pricing · faq) =====
+   Shared section chrome and per-section layout. Uses the same theme tokens
+   as section 1 so dark mode just works. Cards follow the design.md spec:
+   thin outline, minimal radius, barely-there shadow, no SaaS chunkiness.
+   ===================================================================== */
+.section { z-index: 5; padding: clamp(60px, 9vh, 110px) clamp(24px, 4vw, 56px); }
+.section-inner { max-width: 1100px; margin: 0 auto; width: 100%; }
+
+.section-headline {
+  font-weight: 700;
+  font-size: clamp(40px, 6.4vw, 80px);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+  text-align: center;
+  color: var(--ink);
+  transition: color 700ms ease;
+}
+.section-headline .two { display: block; }
+.section-headline .it { font-style: italic; font-weight: 700; }
+.section-subtitle {
+  text-align: center;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  margin-top: 14px;
+  transition: color 700ms ease;
+}
+
+/* ===== onboarding (section 2) ===== */
+#onboarding .section-inner {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(36px, 5vh, 64px);
+  justify-content: center;
+  min-height: calc(100vh - clamp(120px, 18vh, 220px));
+}
+.step-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(20px, 2.4vw, 36px);
+}
+/* Step card layout: the glass card now wraps only the PNG (.step-art).
+   The number/title/copy sit beneath it as plain text inside .step-text.
+   The card was shrunk in both axes so all three columns plus the text below
+   still settle inside one viewport on a typical laptop. */
+.step-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(14px, 1.8vh, 20px);
+}
+.step-art {
+  width: 100%;
+  max-width: clamp(180px, 18vw, 240px);
+  height: clamp(140px, 18vh, 200px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  overflow: hidden;
+  transition:
+    background-color 700ms ease,
+    border-color 700ms ease,
+    box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.step-art img {
+  max-width: 70%;
+  max-height: 80%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 18px rgba(40,70,110,0.16));
+}
+.step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  max-width: clamp(220px, 22vw, 280px);
+}
+.step-num {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  transition: color 700ms ease;
+}
+.step-title {
+  font-size: clamp(16px, 1.4vw, 20px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  transition: color 700ms ease;
+}
+.step-copy {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  transition: color 700ms ease;
+}
+
+/* ===== pricing (section 3) ===== */
+#pricing .section-inner {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(28px, 4vh, 48px);
+  justify-content: center;
+  min-height: calc(100vh - clamp(120px, 18vh, 220px));
+}
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(20px, 2vw, 32px);
+  align-items: stretch;
+}
+.plan-card {
+  position: relative;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  padding: clamp(24px, 2.6vw, 36px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--ink);
+  transition:
+    background-color 700ms ease,
+    border-color 700ms ease,
+    color 700ms ease,
+    box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* Featured ("best value") card flips to a darker glass tint so it stays
+   distinctive without breaking the translucent system. In dark mode the
+   --glass-bg-ink token becomes a near-white tint so it still pops. */
+.plan-card--featured {
+  background: var(--glass-bg-ink);
+  color: var(--paper);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.plan-pill {
+  position: absolute;
+  top: 14px; right: 14px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  padding: 4px 8px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  transition: background-color 700ms ease, color 700ms ease, border-color 700ms ease;
+}
+.plan-name {
+  font-size: clamp(16px, 1.4vw, 20px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.plan-price { display: flex; align-items: baseline; gap: 6px; }
+.plan-price .amount {
+  font-size: clamp(36px, 4vw, 52px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+.plan-price .cadence { font-size: 12px; opacity: 0.7; }
+.plan-feats {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  flex: 1;
+}
+.plan-feats li::before {
+  content: "✓";
+  display: inline-block;
+  width: 16px;
+  font-weight: 700;
+  margin-right: 4px;
+}
+.plan-cta {
+  margin-top: auto;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 11px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 700ms ease;
+}
+.plan-cta:hover { background: transparent; color: var(--ink); }
+.plan-card--featured .plan-cta {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--paper);
+}
+.plan-card--featured .plan-cta:hover { background: transparent; color: var(--paper); border-color: var(--paper); }
+.plan-cta--ghost {
+  background: transparent;
+  color: var(--ink);
+}
+.plan-cta--ghost:hover { background: var(--ink); color: var(--paper); }
+
+/* ===== faq (section 4) ===== */
+#faq .section-inner.faq-inner {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: clamp(36px, 5vw, 72px);
+  align-items: stretch;
+  min-height: calc(100vh - clamp(120px, 18vh, 220px));
+}
+#faq .section-headline { text-align: left; }
+.faq-col { display: flex; flex-direction: column; gap: clamp(24px, 4vh, 44px); justify-content: center; }
+.faq-list { display: flex; flex-direction: column; gap: 10px; }
+.faq-item {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  overflow: hidden;     /* keeps the rounded corners during open/close anim */
+  transition: background-color 700ms ease, border-color 700ms ease, box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.faq-item summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 14px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: var(--ink);
+  transition: color 700ms ease;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after {
+  content: "+";
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--ink);
+  transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1), color 700ms ease;
+  display: inline-block;
+}
+.faq-item[open] summary::after { transform: rotate(45deg); }
+
+/* Smooth open/close is driven by WAAPI in landing.js (the CSS-only
+   grid-template-rows trick became unreliable inside <details> after the
+   first toggle in some engines). We keep .faq-body always in flow with
+   overflow clipped, and JS animates its inline height. */
+.faq-item > .faq-body {
+  display: block;
+  overflow: hidden;
+  height: 0;
+}
+.faq-item[open] > .faq-body { height: auto; }
+.faq-body-inner { display: block; }
+.faq-item p {
+  padding: 0 18px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  transition: color 700ms ease;
+}
+
+/* faq right column: floating flat-lay + final cta card */
+.faq-aside {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: clamp(20px, 3vh, 32px);
+  position: relative;
+}
+.faq-flatlay {
+  position: relative;
+  flex: 1;
+  min-height: clamp(220px, 32vh, 320px);
+}
+.faq-flatlay .fl {
+  position: absolute;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 24px rgba(40,70,110,0.18));
+  /* Each piece composes three independent transform layers via the individual
+     transform properties — `rotate` (static, per-piece angle), `scale`
+     (hover lift), `translate` (continuous bob). They don't clobber each other
+     and the click-spin WAAPI animation (composite: 'add' on `transform`)
+     stacks cleanly on top. Same model the front-page outfit uses, just
+     flattened into one element instead of nested .fly/.bob/.grow wrappers. */
+  scale: 1;
+  translate: 0 0;
+  animation: fl-bob 3.2s ease-in-out infinite;
+  transition:
+    scale 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    filter 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.faq-flatlay .fl:hover {
+  scale: 1.04;
+  filter: brightness(1.04) drop-shadow(0 18px 30px rgba(40, 70, 110, 0.24));
+  transition:
+    scale 160ms cubic-bezier(0.4, 0, 0.2, 1),
+    filter 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.faq-flatlay .fl-shirt { top: 0;   left: 30%; width: 46%; height: 58%; rotate: -4deg;
+  animation-duration: 3.4s; animation-delay: -0.2s; }
+.faq-flatlay .fl-pants { top: 28%; left: 4%;  width: 38%; height: 60%; rotate:  6deg;
+  animation-duration: 3.2s; animation-delay: -0.6s; }
+.faq-flatlay .fl-shoes { bottom: 4%; left: 38%; width: 42%; height: 22%;
+  animation-duration: 4.0s; animation-delay: -1.8s; }
+.faq-flatlay .fl-belt  { top: 8%;  right: 4%;  width: 24%; height: 14%; rotate: -12deg;
+  animation-duration: 2.9s; animation-delay: -0.4s; }
+
+@keyframes fl-bob {
+  0%, 100% { translate: 0 0; }
+  50%      { translate: 0 -6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .faq-flatlay .fl,
+  .faq-flatlay .fl:hover {
+    scale: 1;
+    animation: none;
+    translate: 0 0;
+    transition: filter 160ms ease;
+  }
+}
+
+.cta-card {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  padding: clamp(22px, 2.4vw, 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+  transition: background-color 700ms ease, border-color 700ms ease, box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cta-title {
+  font-size: clamp(20px, 2vw, 26px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--ink);
+  transition: color 700ms ease;
+}
+.cta-title .it { font-style: italic; }
+.cta-sub { font-size: 12px; color: var(--ink-soft); transition: color 700ms ease; }
+.cta-btn {
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 11px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background-color 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 700ms ease;
+}
+.cta-btn:hover { background: transparent; color: var(--ink); }
+
 /* ===== mobile ===== */
 @media (max-width: 700px) {
   .headline { top: 7vh; font-size: 13vw; letter-spacing: -0.05em; }
@@ -574,6 +1035,17 @@ button, input { font-family: Arial, sans-serif; }
   .join { padding: 9px 16px; font-size: 12px; }
   .bottom-left { right: 0; padding: 0 16px; bottom: 40px; }
   .bottom-right { right: 16px; bottom: 18px; }
-  .top-left { left: 16px; top: 18px; }
-  .top-right { right: 16px; top: 20px; }
+  .site-header { padding: 14px 16px; font-size: 14px; }
+  .header-link { font-size: 11px; }
+
+  /* New sections collapse to single column on mobile and gain breathing room. */
+  .section { padding: clamp(48px, 8vh, 80px) 18px; }
+  .section-headline { font-size: clamp(32px, 9.5vw, 48px); }
+  .step-grid { grid-template-columns: 1fr; gap: 28px; }
+  .step-art { height: 130px; max-width: 220px; }
+  .step-text { max-width: 280px; }
+  .plan-grid { grid-template-columns: 1fr; gap: 16px; }
+  #faq .section-inner.faq-inner { grid-template-columns: 1fr; gap: 28px; }
+  #faq .section-headline { text-align: center; }
+  .faq-flatlay { min-height: 200px; }
 }
