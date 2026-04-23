@@ -87,13 +87,26 @@ Overall palette:
 - occasional very light periwinkle / lavender accents only
 
 ### Dark
-- navy sky stack
+- midnight navy sky stack, deliberately uniform
+  - `--sky-1` ≈ `#070e22` → `--sky-4` ≈ `#102046`
+  - very small hue / lightness travel between stops; the gradient should read as one deep night, not a sky that brightens into royal blue at the bottom
 - `--ink` = `#fff`
-- `--paper` = `#0a1230`
-- muted clouds
+- `--ink-soft` ≈ `#c7d2e0`
+- `--paper` ≈ `#0b1430` (only used as a dark surface for inverted CTAs, not as a card fill)
+- muted clouds (silhouettes against the night, not glowing smears)
 - `--flare-op` = `0.35`
 
-Dark mode should feel like night air, not neon cyber UI.
+#### Dark-mode glass cards
+- card fills are a near-neutral white lift, **not** a blue-tinted fill
+  - `--glass-bg` ≈ `rgba(255, 255, 255, 0.030)`
+  - `--glass-bg-strong` ≈ `rgba(255, 255, 255, 0.055)` (featured / CTA)
+- rationale: a saturated blue overlay on top of the navy sky composites to a noticeably brighter, more cyan blue than the background, which breaks the "uniform night" feel. A low-alpha white lift inherits the sky hue underneath and only nudges luminance.
+- border does most of the visible surface definition: `--glass-border` ≈ `rgba(170, 190, 230, 0.16)` — soft cool blue stroke
+- `--glass-highlight` is barely there (`inset 0 1px 0 rgba(255,255,255,0.06)`)
+- shadow is deepened for separation against the night: `0 8px 28px rgba(0, 0, 0, 0.32)`
+- `--glass-blur` is shared with light mode; blur is for refraction, not for fog
+
+Dark mode should feel like night air, not neon cyber UI. If the cards look like a different blue from the background, the fill is too saturated — pull it back toward neutral white-alpha.
 
 ---
 

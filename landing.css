@@ -31,28 +31,37 @@
   --glass-blur:      blur(3px) saturate(140%);
 }
 body.dark {
-  --sky-1: #060d24;
-  --sky-2: #0c1638;
-  --sky-3: #182b5e;
-  --sky-4: #25407a;
+  /* Tight midnight stack — very low hue/lightness travel so the page reads
+     as one uniform deep navy instead of fading into a brighter royal blue at
+     the bottom. Keep the same number of stops as light mode so the gradient
+     still interpolates cleanly through the theme transition. */
+  --sky-1: #050b20;
+  --sky-2: #08122e;
+  --sky-3: #0b1a3c;
+  --sky-4: #0e2148;
   --ink:        #fff;
   --ink-soft:   #c7d2e0;
-  --paper:      #0a1230;
+  --paper:      #0b1430;
   --join-back:  #e6e6e6;
-  --flare-op:   0.35;        /* moonlit, not solar */
+  --flare-op:   0.05;
   /* Clouds tinted just barely above the night sky — present as silhouettes,
      not glowing white smears. */
   --cloud-core: rgba(70, 95, 160, 0.32);
   --cloud-edge: rgba(70, 95, 160, 0.14);
   --cloud-op:   0.7;
-  /* Glass tokens flip to a moonlit interpretation: cool blue-gray fill, very
-     subtle highlight, deeper shadow for contrast against the night sky. */
-  --glass-bg:        rgba(40, 60, 120, 0.14);
-  --glass-bg-strong: rgba(60, 85, 150, 0.20);
+  /* Dark-mode glass uses a near-neutral white lift instead of a blue-tinted
+     fill. Tinted-blue-over-navy composites to a noticeably brighter, more
+     cyan blue than the surrounding sky; a tiny white alpha just lifts the
+     card a step off the background while preserving the sky hue underneath.
+     Border + highlight do the rest of the surface definition. */
+  --glass-bg:        rgba(255, 255, 255, 0.030);
+  --glass-bg-strong: rgba(255, 255, 255, 0.055);
   --glass-bg-ink:    rgba(220, 230, 255, 0.42);
-  --glass-border:    rgba(180, 200, 240, 0.20);
-  --glass-shadow:    0 8px 28px rgba(0, 0, 0, 0.28);
-  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  --glass-border:    rgba(170, 190, 230, 0.16);
+  --glass-shadow:    0 8px 28px rgba(0, 0, 0, 0.32);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --glass-blur:      blur(0px) saturate(160%) brightness(0.5);
+
 }
 /* Theme transitions live on the elements themselves, so toggling body.dark
    smoothly interpolates each themed property over ~700ms. */
@@ -148,19 +157,28 @@ button, input { font-family: Arial, sans-serif; }
   mix-blend-mode: soft-light;
 }
 
-/* ===== clouds ===== */
+/* ===== clouds =====
+   Cloud silhouettes are inline SVG <symbol>s (see landing.html) composed of
+   4–5 overlapping ellipses on a flat-ish base — proper cumulus topology
+   instead of a single blurred ellipse. The radial fill + gaussian blur live
+   in shared <defs>; theming flows through the <stop> classes below so the
+   existing --cloud-core / --cloud-edge tokens still drive day/night. */
 .clouds { position: fixed; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+/* Hidden defs SVG must not occupy layout. */
+.cloud-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+/* Themed gradient stops. The "out" stop fades cleanly to fully transparent
+   so the silhouette has soft halo edges without a hard cutoff. */
+.cloud-stop-core { stop-color: var(--cloud-core); stop-opacity: 1; }
+.cloud-stop-edge { stop-color: var(--cloud-edge); stop-opacity: 1; }
+.cloud-stop-out  { stop-color: var(--cloud-core); stop-opacity: 0; }
 .cloud {
   position: absolute;
-  border-radius: 50%;
-  /* Cloud color is themed: bright white in daytime, a soft tint just barely
-     above the night sky in dark mode so the silhouettes register without
-     glowing. */
-  background: radial-gradient(closest-side, var(--cloud-core), var(--cloud-edge) 55%, rgba(255,255,255,0) 80%);
-  filter: blur(6px);
   opacity: var(--cloud-op);
-  transition: background 800ms ease, opacity 800ms ease;
+  transition: opacity 800ms ease;
   will-change: transform;
+  /* Half-pixel CSS blur on top of the SVG filter softens any edge aliasing
+     that GPU rasterization can introduce on transformed SVG layers. */
+  filter: blur(0.5px);
 }
 .c1 { width: 420px; height: 180px; top: 8%;  left: -25%; animation: drift 120s linear infinite; }
 .c2 { width: 600px; height: 240px; top: 28%; left: -40%; animation: drift 180s linear infinite; animation-delay: -40s; opacity: 0.6; }

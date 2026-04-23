@@ -13,10 +13,54 @@
 <div class="banding"></div>
 <div class="dither"></div>
 <div class="clouds">
-  <div class="cloud c1"></div>
-  <div class="cloud c2"></div>
-  <div class="cloud c3"></div>
-  <div class="cloud c4"></div>
+  <!-- Shared defs: three cumulus silhouettes, one radial fill, one soft-edge
+       blur filter. Theming flows through CSS-controlled <stop> colors so
+       dark/light just works without per-instance overrides. -->
+  <svg class="cloud-defs" aria-hidden="true" focusable="false" width="0" height="0">
+    <defs>
+      <radialGradient id="cloudFill" cx="50%" cy="55%" r="60%">
+        <stop class="cloud-stop-core" offset="0%"></stop>
+        <stop class="cloud-stop-edge" offset="60%"></stop>
+        <stop class="cloud-stop-out"  offset="100%"></stop>
+      </radialGradient>
+      <filter id="cloudSoft" x="-15%" y="-15%" width="130%" height="130%">
+        <feGaussianBlur stdDeviation="2.4"></feGaussianBlur>
+      </filter>
+      <!-- Each silhouette is 4–5 overlapping ellipses (the puffs) over a
+           rounded rect base (the flat-ish underside of a cumulus). 200×100
+           viewBox; instances stretch via preserveAspectRatio="none". -->
+      <symbol id="cloud-a" viewBox="0 0 200 100" preserveAspectRatio="none">
+        <g fill="url(#cloudFill)" filter="url(#cloudSoft)">
+          <ellipse cx="55"  cy="62" rx="32" ry="24"></ellipse>
+          <ellipse cx="92"  cy="48" rx="36" ry="28"></ellipse>
+          <ellipse cx="130" cy="44" rx="32" ry="26"></ellipse>
+          <ellipse cx="160" cy="58" rx="28" ry="22"></ellipse>
+          <rect x="30" y="60" width="150" height="22" rx="18"></rect>
+        </g>
+      </symbol>
+      <symbol id="cloud-b" viewBox="0 0 200 100" preserveAspectRatio="none">
+        <g fill="url(#cloudFill)" filter="url(#cloudSoft)">
+          <ellipse cx="40"  cy="68" rx="26" ry="20"></ellipse>
+          <ellipse cx="78"  cy="55" rx="34" ry="26"></ellipse>
+          <ellipse cx="118" cy="50" rx="38" ry="30"></ellipse>
+          <ellipse cx="158" cy="60" rx="30" ry="24"></ellipse>
+          <rect x="20" y="65" width="170" height="22" rx="18"></rect>
+        </g>
+      </symbol>
+      <symbol id="cloud-c" viewBox="0 0 200 100" preserveAspectRatio="none">
+        <g fill="url(#cloudFill)" filter="url(#cloudSoft)">
+          <ellipse cx="60"  cy="58" rx="30" ry="24"></ellipse>
+          <ellipse cx="100" cy="46" rx="34" ry="28"></ellipse>
+          <ellipse cx="140" cy="56" rx="30" ry="24"></ellipse>
+          <rect x="35" y="60" width="135" height="22" rx="18"></rect>
+        </g>
+      </symbol>
+    </defs>
+  </svg>
+  <svg class="cloud c1" viewBox="0 0 200 100" preserveAspectRatio="none"><use href="#cloud-a"></use></svg>
+  <svg class="cloud c2" viewBox="0 0 200 100" preserveAspectRatio="none"><use href="#cloud-b"></use></svg>
+  <svg class="cloud c3" viewBox="0 0 200 100" preserveAspectRatio="none"><use href="#cloud-c"></use></svg>
+  <svg class="cloud c4" viewBox="0 0 200 100" preserveAspectRatio="none"><use href="#cloud-b"></use></svg>
 </div>
 <div class="flare"></div>
 <div class="grain"></div>
@@ -54,20 +98,20 @@
   </div>
 
   <!-- flying intro items — sized inline so JS can read offsetWidth/Height for
-       the path-anchor math; sources match outfits/outfit_1 exactly so the
+       the path-anchor math; sources match images/outfit_1 exactly so the
        intro and the initial flat-lay are visually identical -->
   <div class="item" id="item-shirt"  style="width:120px; height:120px; margin-left:-60px; margin-top:-60px;">
-    <img src="outfits/outfit_1/shirt.png" alt="">
+    <img src="images/outfit_1/shirt.png" alt="">
   </div>
   <div class="item" id="item-jeans"  style="width:105px; height:150px; margin-left:-52px; margin-top:-75px;">
-    <img src="outfits/outfit_1/pants.png" alt="">
+    <img src="images/outfit_1/pants.png" alt="">
   </div>
   <div class="item" id="item-hat"    style="width:110px; height:72px;  margin-left:-55px; margin-top:-36px;">
-    <img src="outfits/outfit_1/belt.png"  alt="">
+    <img src="images/outfit_1/belt.png"  alt="">
   </div>
   <div class="item shoes" id="item-sneakers" style="width:156px; height:78px; margin-left:-78px; margin-top:-39px;">
-    <img class="shoe-l" src="outfits/outfit_1/shoes.png" alt="">
-    <img class="shoe-r" src="outfits/outfit_1/shoes.png" alt="">
+    <img class="shoe-l" src="images/outfit_1/shoes.png" alt="">
+    <img class="shoe-r" src="images/outfit_1/shoes.png" alt="">
   </div>
 
   <!-- The flat-lay outfit lives inside .page (below) so it scrolls away with
@@ -98,24 +142,24 @@
   <div class="outfit" id="outfit">
     <div class="piece jeans">
       <div class="fly"><div class="bob"><div class="grow">
-        <img class="photo" data-slot="pants" src="outfits/outfit_1/pants.png" alt="">
+        <img class="photo" data-slot="pants" src="images/outfit_1/pants.png" alt="">
       </div></div></div>
     </div>
     <div class="piece shirt">
       <div class="fly"><div class="bob"><div class="grow">
-        <img class="photo" data-slot="shirt" src="outfits/outfit_1/shirt.png" alt="">
+        <img class="photo" data-slot="shirt" src="images/outfit_1/shirt.png" alt="">
       </div></div></div>
     </div>
     <!-- shoes piece holds the photo TWICE (one per foot); JS jitters rotations -->
     <div class="piece sneakers">
       <div class="fly"><div class="bob"><div class="grow">
-        <img class="photo shoe-l" data-slot="shoes" src="outfits/outfit_1/shoes.png" alt="">
-        <img class="photo shoe-r" data-slot="shoes" src="outfits/outfit_1/shoes.png" alt="">
+        <img class="photo shoe-l" data-slot="shoes" src="images/outfit_1/shoes.png" alt="">
+        <img class="photo shoe-r" data-slot="shoes" src="images/outfit_1/shoes.png" alt="">
       </div></div></div>
     </div>
     <div class="piece hat">
       <div class="fly"><div class="bob"><div class="grow">
-        <img class="photo" data-slot="belt" src="outfits/outfit_1/belt.png" alt="">
+        <img class="photo" data-slot="belt" src="images/outfit_1/belt.png" alt="">
       </div></div></div>
     </div>
   </div>
@@ -161,7 +205,7 @@
     <ol class="step-grid" role="list">
       <li class="step-card">
         <div class="step-art">
-          <img src="outfits/outfit_1/shirt.png" alt="">
+          <img src="images/closet.png" alt="">
         </div>
         <div class="step-text">
           <div class="step-num">01</div>
@@ -171,7 +215,7 @@
       </li>
       <li class="step-card">
         <div class="step-art">
-          <img src="outfits/outfit_2/shirt.png" alt="">
+          <img src="images/outfit_1/outfit_1_full.png" alt="">
         </div>
         <div class="step-text">
           <div class="step-num">02</div>
@@ -181,7 +225,7 @@
       </li>
       <li class="step-card">
         <div class="step-art">
-          <img src="outfits/outfit_3/shirt.png" alt="">
+          <img src="images/outfit_3/shirt.png" alt="">
         </div>
         <div class="step-text">
           <div class="step-num">03</div>
@@ -242,7 +286,7 @@
   <div class="section-inner faq-inner">
     <div class="faq-col">
       <h2 class="section-headline" id="faq-title">
-        questions?<span class="two"><em class="it">we got you</em>.</span>
+        questions?<span class="two"><em class="it"></span>
       </h2>
       <!-- Each <details> body is wrapped in .faq-body / .faq-body-inner so the
            CSS grid-template-rows trick can smoothly animate height between
@@ -273,10 +317,10 @@
     </div>
     <aside class="faq-aside">
       <div class="faq-flatlay">
-        <img class="fl fl-shirt" src="outfits/outfit_2/shirt.png" alt="">
-        <img class="fl fl-pants" src="outfits/outfit_2/pants.png" alt="">
-        <img class="fl fl-shoes" src="outfits/outfit_2/shoes.png" alt="">
-        <img class="fl fl-belt"  src="outfits/outfit_2/belt.png"  alt="">
+        <img class="fl fl-shirt" src="images/outfit_2/shirt.png" alt="">
+        <img class="fl fl-pants" src="images/outfit_2/pants.png" alt="">
+        <img class="fl fl-shoes" src="images/outfit_2/shoes.png" alt="">
+        <img class="fl fl-belt"  src="images/outfit_2/belt.png"  alt="">
       </div>
       <div class="cta-card">
         <h3 class="cta-title">ready to upgrade<br><em class="it">your closet?</em></h3>
