@@ -416,7 +416,7 @@ button, input { font-family: Arial, sans-serif; }
 /* ===== sticky site header =====
    Lives outside .page so it stays pinned to the viewport across every section.
    Faded in at the same intro reveal moment as the rest of the landing chrome
-   (landing.js adds .show). Glass-tinted background appears once the user
+   (index.js adds .show). Glass-tinted background appears once the user
    actually scrolls (.scrolled), so it stays invisible at rest on section 1. */
 .site-header {
   position: fixed;
@@ -466,7 +466,7 @@ button, input { font-family: Arial, sans-serif; }
 }
 
 /* ===== theme toggle (in site header) =====
-   The icon does a vertical twist on click (driven by WAAPI in landing.js):
+   The icon does a vertical twist on click (driven by WAAPI in index.js):
    it squeezes horizontally to a thin sliver and grows slightly taller, the
    glyph swaps to the moon, then it expands back out. No 3D, no faux flip. */
 .theme-toggle {
@@ -918,7 +918,7 @@ button, input { font-family: Arial, sans-serif; }
 }
 .faq-item[open] summary::after { transform: rotate(45deg); }
 
-/* Smooth open/close is driven by WAAPI in landing.js (the CSS-only
+/* Smooth open/close is driven by WAAPI in index.js (the CSS-only
    grid-template-rows trick became unreliable inside <details> after the
    first toggle in some engines). We keep .faq-body always in flow with
    overflow clipped, and JS animates its inline height. */

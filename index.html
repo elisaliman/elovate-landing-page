@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
   <title>Qlozet — your Qlozet, only better</title>
-  <link rel="stylesheet" href="landing.css">
+  <link rel="stylesheet" href="index.css">
 </head>
 <body>
 
@@ -123,10 +123,10 @@
 
 <!-- Sticky site header — visible across every section. Lives outside .page so
      it stays fixed regardless of scroll. Revealed at the same moment as the
-     landing page in landing.js. -->
+     landing page in index.js. -->
 <header class="site-header" id="siteHeader">
   <!-- Theme toggle: a single glyph that vertical-twists (squeeze in tall,
-       swap, squeeze back out) when clicked. Driven entirely by landing.js. -->
+       swap, squeeze back out) when clicked. Driven entirely by index.js. -->
   <button id="themeToggle" class="theme-toggle" type="button" aria-label="toggle dark mode" aria-pressed="false">
     <span class="theme-glyph" aria-hidden="true">☼</span>
     Qlozet
@@ -171,7 +171,7 @@
   <div class="subtitle">a digital wardrobe for your dorm. share fits. swap pieces. get dressed.</div>
 
   <!-- Formspree handles delivery. method/action also act as a graceful no-JS
-       fallback; landing.js intercepts submit and POSTs via fetch with an
+       fallback; index.js intercepts submit and POSTs via fetch with an
        Accept: application/json header so Formspree returns JSON instead of
        redirecting, keeping the user on this page. -->
   <form class="capture" id="capture" action="https://formspree.io/f/xeevpobb" method="POST" novalidate>
@@ -331,6 +331,6 @@
   </div>
 </section>
 
-<script src="landing.js"></script>
+<script src="index.js"></script>
 </body>
 </html>
