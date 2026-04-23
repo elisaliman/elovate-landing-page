@@ -68,19 +68,14 @@ body.dark {
 :root, body { transition: background-color 700ms ease, color 700ms ease; }
 
 html, body { width: 100%; background: var(--sky-1); }
-/* The viewport scroller is <html>, not <body>. Putting scroll-snap on body is
-   a known trap — body becomes an internal scroll container and window.scrollY
-   stays at 0 forever, which silently breaks header-on-scroll, scrollTo({top:0}),
-   and (in some browsers) the snap interpolation itself. Keeping the document
-   element as the scroller fixes all three at once. */
+/* The viewport scroller is <html>, not <body>. Keeping the document element
+   as the scroller (rather than promoting body to a scroll container) is what
+   lets header-on-scroll, scrollTo({top:0}), and other window.scrollY consumers
+   work without surprises. */
 html { height: 100%; overflow: hidden; }
 html.scrollable {
   overflow-x: hidden;
   overflow-y: auto;
-  /* Mandatory snap so the page always settles on a section after the user
-     stops scrolling — they never rest "between" two panels. */
-  scroll-snap-type: y mandatory;
-  scroll-behavior: smooth;
 }
 body {
   font-family: Arial, sans-serif;
@@ -91,9 +86,7 @@ body {
   letter-spacing: -0.01em;
   min-height: 100%;
 }
-.snap-section {
-  scroll-snap-align: start;
-  scroll-snap-stop: normal;
+.page-section {
   min-height: 100vh;
   position: relative;
 }
@@ -400,8 +393,8 @@ button, input { font-family: Arial, sans-serif; }
 }
 
 /* ===== final landing page =====
-   Now in normal flow as the first scroll-snap section. Children remain
-   absolutely positioned within it (top-left logo, headline, capture, etc.). */
+   First full-viewport section in normal flow. Children remain absolutely
+   positioned within it (top-left logo, headline, capture, etc.). */
 .page {
   position: relative;
   width: 100%;
@@ -880,7 +873,20 @@ button, input { font-family: Arial, sans-serif; }
   min-height: calc(100vh - clamp(120px, 18vh, 220px));
 }
 #faq .section-headline { text-align: left; }
-.faq-col { display: flex; flex-direction: column; gap: clamp(24px, 4vh, 44px); justify-content: center; }
+/* Top-anchored, NOT center-justified. With justify-content: center the entire
+   headline+list group recenters whenever an item expands, which drags the
+   clicked summary upward by half the gained height — making the +/× toggle
+   feel like it "jumps". Anchoring to flex-start means opening an item only
+   pushes siblings BELOW it downward; the clicked summary stays put. The
+   padding-top approximates the previous resting visual center for the
+   collapsed state. */
+.faq-col {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(24px, 4vh, 44px);
+  justify-content: flex-start;
+  padding-top: clamp(32px, 8vh, 96px);
+}
 .faq-list { display: flex; flex-direction: column; gap: 10px; }
 .faq-item {
   background: var(--glass-bg);

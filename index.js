@@ -150,7 +150,7 @@
       const header = document.getElementById('siteHeader');
       if (header) header.classList.add('show');
       // Intro is fully revealed; unlock scroll so the user can move into the
-      // onboarding/pricing/faq sections. Snap behavior is defined in CSS.
+      // onboarding/pricing/faq sections.
       document.documentElement.classList.add('scrollable');
     }, 3300);
 
@@ -814,7 +814,7 @@
   const scrollToTopAndFocus = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     // 700ms covers a typical smooth scroll across the full document. preventScroll
-    // stops focus from yanking the viewport off the snap point we just landed on.
+    // stops focus from yanking the viewport away from where we just landed.
     setTimeout(() => {
       const input = document.getElementById('email');
       if (input && typeof input.focus === 'function') input.focus({ preventScroll: true });
