@@ -18,9 +18,14 @@ from .inspect import (
 from .normalize import normalize_asset
 
 
-DEFAULT_OUTFITS_ROOT = Path("outfits")
-DEFAULT_OUT_ROOT = Path("outfits_normalized")
-DEFAULT_REPORT_DIR = Path("tools/normalize_outfits/reports")
+# Anchor default paths to the project root (three levels up from this file:
+# tools/normalize_outfits/normalize_outfits/cli.py), so the CLI works the same
+# regardless of the cwd it's invoked from.
+_PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+DEFAULT_OUTFITS_ROOT = _PROJECT_ROOT / "images" / "outfits"
+DEFAULT_OUT_ROOT = _PROJECT_ROOT / "images" / "outfits_normalized"
+DEFAULT_REPORT_DIR = _PROJECT_ROOT / "tools" / "normalize_outfits" / "reports"
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -32,7 +37,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--outfits-root",
         type=Path,
         default=DEFAULT_OUTFITS_ROOT,
-        help="Root directory containing outfit_N/ folders (default: outfits)",
+        help=f"Root directory containing outfit_N/ folders (default: {DEFAULT_OUTFITS_ROOT})",
     )
     p.add_argument(
         "--reference",
