@@ -122,8 +122,11 @@ button, input { font-family: Arial, sans-serif; }
     radial-gradient(rgba(70,120,170,0.18) 1px, transparent 1px);
   background-size: 3px 3px, 4px 4px;
   background-position: 0 0, 1px 2px;
-  mix-blend-mode: overlay;
-  opacity: 0.55;
+  /* No mix-blend-mode: it forces an isolation group spanning the whole
+     fixed viewport, which made every bob/jitter under it re-rasterize
+     the document layer in Chrome (~27 tiles/frame during transitions).
+     Plain alpha looks ~the same at this dot density. */
+  opacity: 0.05;
   z-index: 1;
   pointer-events: none;
 }
@@ -139,7 +142,7 @@ button, input { font-family: Arial, sans-serif; }
   position: fixed; inset: 0;
   z-index: 2;
   pointer-events: none;
-  opacity: 0.22;
+  opacity: 0.06;
   background: repeating-linear-gradient(
     to bottom,
     rgba(255,255,255,0) 0px,
@@ -147,7 +150,7 @@ button, input { font-family: Arial, sans-serif; }
     rgba(180,210,235,0.35) 7px,
     rgba(180,210,235,0.35) 8px
   );
-  mix-blend-mode: soft-light;
+  /* See .dither — same mix-blend-mode raster-thrash trap. */
 }
 
 /* ===== clouds =====
