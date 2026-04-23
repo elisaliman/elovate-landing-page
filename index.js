@@ -563,6 +563,16 @@
     if (cycling) return;
     const piece = e.target.closest('.piece');
     if (!piece || !outfit.contains(piece)) return;
+    // Sneakers share one .fly between two <img> elements (so cycleOutfit and
+    // the choreographies treat the pair as a single unit). To let each shoe
+    // spin independently on click, target the specific img when the click
+    // landed on one — composite:'add' in spinElement composes the 360° on
+    // top of the shoe's inline jitter rotation, so it returns to its angle.
+    const shoe = e.target.closest('.shoe-l, .shoe-r');
+    if (shoe && piece.contains(shoe)) {
+      spinElement(shoe);
+      return;
+    }
     const fly = piece.querySelector('.fly');
     if (!fly) return;
     spinElement(fly);
