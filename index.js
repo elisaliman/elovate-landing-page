@@ -14,9 +14,10 @@
   // animation's photos (outfit_1). Drop a new images/outfit_N folder and add
   // an entry here to extend the rotation; mixed extensions are fine.
   const OUTFITS = [
-    { shirt: 'images/outfit_1/shirt.png', pants: 'images/outfit_1/pants.png', belt: 'images/outfit_1/belt.png', shoes: 'images/outfit_1/shoes.png' },
-    { shirt: 'images/outfit_2/shirt.png', pants: 'images/outfit_2/pants.png', belt: 'images/outfit_2/belt.png', shoes: 'images/outfit_2/shoes.png' },
-    { shirt: 'images/outfit_3/shirt.png', pants: 'images/outfit_3/pants.png', belt: 'images/outfit_3/belt.png', shoes: 'images/outfit_3/shoes.png' },
+    { shirt: 'images/outfits/outfit_1/shirt.png', pants: 'images/outfits/outfit_1/pants.png', belt: 'images/outfits/outfit_1/belt.png', shoes: 'images/outfits/outfit_1/shoes.png' },
+    { shirt: 'images/outfits/outfit_2/shirt.png', pants: 'images/outfits/outfit_2/pants.png', belt: 'images/outfits/outfit_2/belt.png', shoes: 'images/outfits/outfit_2/shoes.png' },
+    { shirt: 'images/outfits/outfit_3/shirt.png', pants: 'images/outfits/outfit_3/pants.png', belt: 'images/outfits/outfit_3/belt.png', shoes: 'images/outfits/outfit_3/shoes.png' },
+    { shirt: 'images/outfits/outfit_4/shirt.png', pants: 'images/outfits/outfit_4/pants.png', belt: 'images/outfits/outfit_4/belt.png', shoes: 'images/outfits/outfit_4/shoes.png' },
   ];
   let outfitIdx = 0;
 
