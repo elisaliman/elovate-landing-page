@@ -261,10 +261,23 @@
   // `(i) => opts` so per-index staggers can vary `delay`. `fill: 'forwards'`
   // is applied by default. Used by every choreography below to remove the
   // Promise.all/map/animate boilerplate that was otherwise duplicated 12+ times.
+  // After each phase finishes we commitStyles() + cancel() the animation:
+  // Chrome's WAAPI layers chained .animate(...).then(.animate(...)) calls
+  // when the previous one has fill:forwards (the old animation stays active
+  // and stacks with the new one on the same transform property). The visible
+  // symptoms are pieces "disappearing"/jumping to origin for a frame, or
+  // landing at a wrong final position after multi-phase choreographies like
+  // swirl. commitStyles bakes the end transform into inline style before we
+  // cancel the WAAPI animation, so the next phase starts from a clean DOM
+  // state with no leftover layered animations.
   function animateAll(flys, framesFn, opts) {
     return Promise.all(flys.map((fly, i) => {
       const o = typeof opts === 'function' ? opts(i) : opts;
-      return fly.animate(framesFn(i), { fill: 'forwards', ...o }).finished;
+      const anim = fly.animate(framesFn(i), { fill: 'forwards', ...o });
+      return anim.finished.then(() => {
+        try { anim.commitStyles(); } catch (_) { /* element unrenderable */ }
+        anim.cancel();
+      });
     }));
   }
 
@@ -510,7 +523,15 @@
     if (cycling) return;
     cycling = true;
     const flys = [...outfit.querySelectorAll('.piece .fly')];
-    flys.forEach(f => f.getAnimations().forEach(a => a.cancel()));
+    // Reset to a clean state: cancel any lingering WAAPI animation AND clear
+    // any inline transform/opacity left over from the previous cycle's final
+    // commitStyles (see animateAll). Without this, a cycle interrupted partway
+    // would leave .fly stuck at a mid-choreography transform.
+    flys.forEach(f => {
+      f.getAnimations().forEach(a => a.cancel());
+      f.style.transform = '';
+      f.style.opacity = '';
+    });
 
     const choreo = CHOREOS[pickChoreo()];
     try {
@@ -520,8 +541,14 @@
       applyOutfit(outfitIdx);
       await choreo.enter(flys);
     } finally {
-      // Cancel WAAPI so .fly returns to identity transform; .bob continues.
-      flys.forEach(f => f.getAnimations().forEach(a => a.cancel()));
+      // animateAll already commit+cancels each phase; this strips the final
+      // committed inline transform/opacity so .fly is back to CSS identity
+      // and .bob's CSS animation runs cleanly underneath.
+      flys.forEach(f => {
+        f.getAnimations().forEach(a => a.cancel());
+        f.style.transform = '';
+        f.style.opacity = '';
+      });
       cycling = false;
     }
   }
